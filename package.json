@@ -1,0 +1,21 @@
+{
+  "name": "sdrive-hub-worker",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": "20.x.x"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node --import=specifier-resolution-node/register src/index.js",
+    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/sdrive-001-adeb2f2dcdc2.json node --import=specifier-resolution-node/register src/index.js",
+    "deploy": "gcloud run jobs deploy sdrive-hub-worker --source . --cpu=1 --memory=512Mi --tasks=1 --max-retries=1 --task-timeout=20m --region=us-central1 --project=sdrive-001",
+    "cleanUp": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/sdrive-001-adeb2f2dcdc2.json node --import=specifier-resolution-node/register src/cleanUp.js",
+    "rework": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/sdrive-001-adeb2f2dcdc2.json node --import=specifier-resolution-node/register src/rework.js"
+  },
+  "dependencies": {
+    "@google-cloud/datastore": "^8.3.0",
+    "@google-cloud/storage": "^7.7.0",
+    "specifier-resolution-node": "^1.1.1"
+  }
+}

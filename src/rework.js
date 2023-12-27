@@ -1,217 +1,10 @@
-import { Datastore, PropertyFilter } from '@google-cloud/datastore';
 import { Storage } from '@google-cloud/storage';
 
-import {
-  FILE_LOG, FILE_INFO, BUCKET_INFO, FILE_WORK_LOG, HUB_BUCKET, BACKUP_BUCKET, ACTIVE,
-  DELETED,
-} from './const';
-import { isObject, isString, randomString, extractPath } from './utils';
+import dataApi from './data';
+import { HUB_BUCKET, BACKUP_BUCKET, ACTIVE, DELETED } from './const';
+import { isObject, randomString, extractPath } from './utils';
 
-const datastore = new Datastore();
 const storage = new Storage();
-
-const getLatestFileLogs = async () => {
-  const transaction = datastore.transaction({ readOnly: true });
-  try {
-    await transaction.run();
-
-    const query = datastore.createQuery(FILE_LOG);
-    query.order('createDate', { descending: true });
-    query.limit(100);
-    const [entities] = await transaction.runQuery(query);
-
-    await transaction.commit();
-
-    const logs = [];
-    for (const entity of entities) {
-      const log = { key: entity[datastore.KEY].id, createDate: entity.createDate };
-      logs.push(log);
-    }
-    return logs;
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
-  }
-};
-
-const getNewerFileLogs = async (createDate) => {
-  const transaction = datastore.transaction({ readOnly: true });
-  try {
-    await transaction.run();
-
-    const query = datastore.createQuery(FILE_LOG);
-    query.filter(new PropertyFilter('createDate', '>=', createDate));
-    query.limit(800);
-    const [entities] = await transaction.runQuery(query);
-
-    await transaction.commit();
-
-    const logs = [];
-    for (const entity of entities) {
-      const log = { key: entity[datastore.KEY].id, createDate: entity.createDate };
-      logs.push(log);
-    }
-    return logs;
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
-  }
-};
-
-const getFileInfos = async () => {
-  const transaction = datastore.transaction({ readOnly: true });
-  try {
-    await transaction.run();
-
-    const query = datastore.createQuery(FILE_INFO);
-    const [entities] = await transaction.runQuery(query);
-
-    await transaction.commit();
-
-    const infos = [];
-    for (const entity of entities) {
-      const info = {
-        path: entity[datastore.KEY].name,
-        status: entity.status,
-        size: entity.size,
-        createDate: entity.createDate,
-        updateDate: entity.updateDate,
-      };
-      infos.push(info);
-    }
-    return infos;
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
-  }
-};
-
-const updateFileInfos = async (fileInfos) => {
-  const entities = [];
-  for (const fileInfo of fileInfos) {
-    const entity = {
-      key: datastore.key([FILE_INFO, fileInfo.path]),
-      data: [
-        { name: 'status', value: fileInfo.status },
-        { name: 'size', value: fileInfo.size, excludeFromIndexes: true },
-        { name: 'createDate', value: fileInfo.createDate },
-        { name: 'updateDate', value: fileInfo.updateDate },
-      ],
-    };
-    entities.push(entity);
-  }
-
-  const nEntities = 64;
-  for (let i = 0; i < entities.length; i += nEntities) {
-    const selectedEntities = entities.slice(i, i + nEntities);
-
-    const transaction = datastore.transaction();
-    try {
-      await transaction.run();
-
-      transaction.save(selectedEntities);
-      await transaction.commit();
-    } catch (e) {
-      await transaction.rollback();
-      throw e;
-    }
-  }
-};
-
-const getBucketInfos = async () => {
-  const transaction = datastore.transaction({ readOnly: true });
-  try {
-    await transaction.run();
-
-    const query = datastore.createQuery(BUCKET_INFO);
-    const [entities] = await transaction.runQuery(query);
-
-    await transaction.commit();
-
-    const infos = [];
-    for (const entity of entities) {
-      const info = {
-        address: entity[datastore.KEY].name,
-        assoIssAddress: entity.assoIssAddress,
-        nItems: entity.nItems,
-        size: entity.size,
-        createDate: entity.createDate,
-        updateDate: entity.updateDate,
-      };
-      infos.push(info);
-    }
-    return infos;
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
-  }
-};
-
-const updateBucketInfos = async (bucketInfos) => {
-  const entities = [];
-  for (const bucketInfo of bucketInfos) {
-    const entity = {
-      key: datastore.key([BUCKET_INFO, bucketInfo.address]),
-      data: [
-        { name: 'assoIssAddress', value: bucketInfo.assoIssAddress },
-        { name: 'nItems', value: bucketInfo.nItems },
-        { name: 'size', value: bucketInfo.size },
-        { name: 'createDate', value: bucketInfo.createDate },
-        { name: 'updateDate', value: bucketInfo.updateDate },
-      ],
-    };
-    entities.push(entity);
-  }
-
-  const nEntities = 64;
-  for (let i = 0; i < entities.length; i += nEntities) {
-    const selectedEntites = entities.slice(i, i + nEntities);
-
-    const transaction = datastore.transaction();
-    try {
-      await transaction.run();
-
-      transaction.save(selectedEntites);
-      await transaction.commit();
-    } catch (e) {
-      await transaction.rollback();
-      throw e;
-    }
-  }
-};
-
-const saveFileWorkLog = async (lastKeys, lastCreateDate) => {
-  if (Array.isArray(lastKeys)) lastKeys = lastKeys.join(',');
-  if (!isString(lastKeys)) throw new Error(`Invalid lastKeys: ${lastKeys}`);
-
-  const logData = [
-    { name: 'lastKeys', value: lastKeys, excludeFromIndexes: true },
-    { name: 'lastCreateDate', value: lastCreateDate },
-    { name: 'createDate', value: new Date() },
-  ];
-  await datastore.save({ key: datastore.key([FILE_WORK_LOG]), data: logData });
-};
-
-const listFiles = async (bucket) => {
-  const files = [];
-  await new Promise((resolve, reject) => {
-    const readable = bucket.getFilesStream({ autoPaginate: false });
-    readable.on('error', (error) => {
-      reject(error);
-    });
-    readable.on('data', (file) => {
-      const { name: path, metadata } = file;
-      const size = parseInt(metadata.size, 10);
-      const createDate = new Date(metadata.timeCreated);
-      const updateDate = new Date(metadata.updated);
-      files.push({ path, size, createDate, updateDate });
-    });
-    readable.on('end', () => {
-      resolve(files);
-    });
-  });
-  return files;
-};
 
 const rework = async () => {
   const startDate = new Date();
@@ -219,9 +12,9 @@ const rework = async () => {
   console.log(`(${logKey}) rework starts on ${startDate.toISOString()}`);
 
   // Datastore
-  const latestFileLogs = await getLatestFileLogs();
-  const fileInfos = await getFileInfos();
-  const bucketInfos = await getBucketInfos();
+  const latestFileLogs = await dataApi.getLatestFileLogs();
+  const fileInfos = await dataApi.getAllFileInfos();
+  const bucketInfos = await dataApi.getAllBucketInfos();
 
   const fileInfosPerPath = {}, bucketInfosPerAddress = {};
   for (const fileInfo of fileInfos) {
@@ -235,8 +28,8 @@ const rework = async () => {
   const hubBucket = storage.bucket(HUB_BUCKET);
   const backupBucket = storage.bucket(BACKUP_BUCKET);
 
-  const hubFiles = await listFiles(hubBucket);
-  const backupFiles = await listFiles(backupBucket);
+  const hubFiles = await dataApi.listFiles(hubBucket);
+  const backupFiles = await dataApi.listFiles(backupBucket);
 
   const hubFilesPerPath = {}, backupFilesPerPath = {};
   for (const hubFile of hubFiles) {
@@ -333,8 +126,8 @@ const rework = async () => {
     }
   }
 
-  await updateFileInfos(udtdFileInfos);
-  await updateBucketInfos(udtdBucketInfos);
+  await dataApi.updateFileInfos(udtdFileInfos);
+  await dataApi.updateBucketInfos(udtdBucketInfos);
 
   // Alert newer FileLogs
   let latestKeys = [], latestCreateDate, newerFileLogs = [];
@@ -345,7 +138,7 @@ const rework = async () => {
     }
   }
   if (!latestCreateDate) latestCreateDate = startDate;
-  const _newerFileLogs = await getNewerFileLogs(latestCreateDate);
+  const _newerFileLogs = await dataApi.getFileLogs(latestCreateDate);
   for (const log of _newerFileLogs) {
     if (latestKeys.includes(log.key)) continue;
     newerFileLogs.push(log);
@@ -359,7 +152,7 @@ const rework = async () => {
   }
 
   // Save latest processed keys and timestamp of FileLog
-  await saveFileWorkLog(latestKeys, latestCreateDate);
+  await dataApi.saveFileWorkLog(latestKeys, latestCreateDate);
 
   console.log(`(${logKey}) Rework finishes on ${(new Date()).toISOString()}.`);
 };

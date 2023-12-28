@@ -1,9 +1,11 @@
 import { Datastore, PropertyFilter, and } from '@google-cloud/datastore';
+import { Storage } from '@google-cloud/storage';
 
 import { FILE_LOG, FILE_INFO, BUCKET_INFO, FILE_WORK_LOG, DELETED } from './const';
 import { isString } from './utils';
 
 const datastore = new Datastore();
+const storage = new Storage();
 
 // Tables: FileLog, FileInfo, BucketInfo, FileWorkLog, Blacklist, Revocation
 // FileLog: auto key, path, assoIssAddress, action, size, sizeChange, createDate
@@ -416,10 +418,10 @@ const saveFileWorkLog = async (lastKeys, lastCreateDate) => {
   await datastore.save({ key: datastore.key([FILE_WORK_LOG]), data: logData });
 };
 
-const listFiles = async (bucket) => {
+const listFiles = async (bucketName) => {
   const files = [];
   await new Promise((resolve, reject) => {
-    const readable = bucket.getFilesStream({ autoPaginate: false });
+    const readable = storage.bucket(bucketName).getFilesStream({ autoPaginate: false });
     readable.on('error', (error) => {
       reject(error);
     });
@@ -437,7 +439,16 @@ const listFiles = async (bucket) => {
   return files;
 };
 
-const deleteFiles = async (bucket, paths) => {
+const copyFile = async (bucketName, path, destBucketName) => {
+  const bucket = storage.bucket(bucketName);
+  const destBucket = storage.bucket(destBucketName);
+
+  const bucketFile = bucket.file(path);
+  await bucketFile.copy(destBucket, { predefinedAcl: 'private' });
+};
+
+const deleteFiles = async (bucketName, paths) => {
+  const bucket = storage.bucket(bucketName);
   for (const path of paths) {
     const bucketFile = bucket.file(path);
     await bucketFile.delete();
@@ -448,7 +459,7 @@ const data = {
   getFileLogs, getLatestFileLogs, getObsoleteFileLogs, deleteFileLogs, getFileInfos,
   getAllFileInfos, getDeletedFileInfos, updateFileInfos, deleteFileInfos,
   getBucketInfos, getAllBucketInfos, updateBucketInfos, getLatestFileWorkLog,
-  saveFileWorkLog, listFiles, deleteFiles,
+  saveFileWorkLog, listFiles, copyFile, deleteFiles,
 };
 
 export default data;

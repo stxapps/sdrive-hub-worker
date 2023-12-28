@@ -1,22 +1,16 @@
-import { Storage } from '@google-cloud/storage';
-
 import dataApi from './data';
 import { BACKUP_BUCKET } from './const';
 import { randomString } from './utils';
-
-const storage = new Storage();
 
 const cleanUp = async () => {
   const startDate = new Date();
   const logKey = randomString(12);
   console.log(`(${logKey}) cleanUp starts on ${startDate.toISOString()}`);
 
-  const backupBucket = storage.bucket(BACKUP_BUCKET);
-
   // Backup Storage and FileInfo
   const fileInfos = await dataApi.getDeletedFileInfos();
   const paths = fileInfos.map(fileInfo => fileInfo.path);
-  await dataApi.deleteFiles(backupBucket, paths);
+  await dataApi.deleteFiles(BACKUP_BUCKET, paths);
   await dataApi.deleteFileInfos(fileInfos);
 
   // FileLog

@@ -1,10 +1,6 @@
-import { Storage } from '@google-cloud/storage';
-
 import dataApi from './data';
 import { HUB_BUCKET, BACKUP_BUCKET, ACTIVE, DELETED } from './const';
 import { isObject, randomString, extractPath } from './utils';
-
-const storage = new Storage();
 
 const rework = async () => {
   const startDate = new Date();
@@ -25,11 +21,8 @@ const rework = async () => {
   }
 
   // Storage
-  const hubBucket = storage.bucket(HUB_BUCKET);
-  const backupBucket = storage.bucket(BACKUP_BUCKET);
-
-  const hubFiles = await dataApi.listFiles(hubBucket);
-  const backupFiles = await dataApi.listFiles(backupBucket);
+  const hubFiles = await dataApi.listFiles(HUB_BUCKET);
+  const backupFiles = await dataApi.listFiles(BACKUP_BUCKET);
 
   const hubFilesPerPath = {}, backupFilesPerPath = {};
   for (const hubFile of hubFiles) {
@@ -44,8 +37,7 @@ const rework = async () => {
   for (const hubFile of hubFiles) {
     const backupFile = backupFilesPerPath[hubFile.path];
     if (!isObject(backupFile) || hubFile.updateDate > backupFile.updateDate) {
-      const bucketFile = hubBucket.file(hubFile.path);
-      await bucketFile.copy(backupBucket, { predefinedAcl: 'private' });
+      await dataApi.copyFile(HUB_BUCKET, hubFile.path, BACKUP_BUCKET);
     }
 
     let doUpdate = false, udtdFileInfo;

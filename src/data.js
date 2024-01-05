@@ -199,7 +199,7 @@ const getDeletedFileInfos = async () => {
     query.filter(and([
       new PropertyFilter('status', '=', DELETED),
       new PropertyFilter('updateDate', '<', date),
-    ]));
+    ])); // Need Composite Index Configuration in index.yaml in sdrive-hub
     query.order('updateDate', { descending: false });
     query.limit(800);
     const [entities] = await transaction.runQuery(query);

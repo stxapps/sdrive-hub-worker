@@ -9,8 +9,11 @@ const rework = async () => {
 
   // Datastore
   const latestFileLogs = await dataApi.getLatestFileLogs();
+  console.log(`(${logKey}) Got ${latestFileLogs.length} FileLog entities`);
   const fileInfos = await dataApi.getAllFileInfos();
+  console.log(`(${logKey}) Got ${fileInfos.length} FileInfo entities`);
   const bucketInfos = await dataApi.getAllBucketInfos();
+  console.log(`(${logKey}) Got ${bucketInfos.length} BucketInfo entities`);
 
   const fileInfosPerPath = {}, bucketInfosPerAddress = {};
   for (const fileInfo of fileInfos) {
@@ -22,7 +25,9 @@ const rework = async () => {
 
   // Storage
   const hubFiles = await dataApi.listFiles(HUB_BUCKET);
+  console.log(`(${logKey}) There are ${hubFiles.length} files in the hub bucket`);
   const backupFiles = await dataApi.listFiles(BACKUP_BUCKET);
+  console.log(`(${logKey}) There are ${backupFiles.length} files in the backup bucket`);
 
   const hubFilesPerPath = {}, backupFilesPerPath = {};
   for (const hubFile of hubFiles) {
@@ -38,6 +43,7 @@ const rework = async () => {
     const backupFile = backupFilesPerPath[hubFile.path];
     if (!isObject(backupFile) || hubFile.updateDate > backupFile.updateDate) {
       await dataApi.copyFile(HUB_BUCKET, hubFile.path, BACKUP_BUCKET);
+      console.log(`(${logKey}) Copied ${hubFile.path} to the backup bucket`);
     }
 
     let doUpdate = false, udtdFileInfo;
@@ -117,9 +123,12 @@ const rework = async () => {
       udtdBucketInfos.push(udtdBucketInfo);
     }
   }
+  console.log(`(${logKey}) Populated udtdFileInfos and udtdBucketInfos`);
 
   await dataApi.updateFileInfos(udtdFileInfos);
+  console.log(`(${logKey}) Saved updated FileInfo entities`);
   await dataApi.updateBucketInfos(udtdBucketInfos);
+  console.log(`(${logKey}) Saved updated BucketInfo entities`);
 
   // Alert newer FileLogs
   let latestKeys = [], latestCreateDate, newerFileLogs = [];
@@ -135,16 +144,14 @@ const rework = async () => {
     if (latestKeys.includes(log.key)) continue;
     newerFileLogs.push(log);
   }
+  console.log(`(${logKey}) Got ${newerFileLogs.length} newer FileLog entities`);
   if (newerFileLogs.length > 0) {
-    console.log('*** Newer file logs ***');
-    for (const log of newerFileLogs) {
-      console.log(log);
-    }
-    console.log('*** End ***');
+    console.log(`(${logKey}) newerFileLogs: ${JSON.stringify(newerFileLogs)}`);
   }
 
   // Save latest processed keys and timestamp of FileLog
   await dataApi.saveFileWorkLog(latestKeys, latestCreateDate);
+  console.log(`(${logKey}) Saved latest FileWorkLog`);
 
   console.log(`(${logKey}) Rework finishes on ${(new Date()).toISOString()}.`);
 };

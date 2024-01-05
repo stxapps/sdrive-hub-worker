@@ -9,19 +9,29 @@ const cleanUp = async () => {
 
   // Backup Storage and FileInfo
   const fileInfos = await dataApi.getDeletedFileInfos();
-  const paths = fileInfos.map(fileInfo => fileInfo.path);
-  await dataApi.deleteFiles(BACKUP_BUCKET, paths);
-  await dataApi.deleteFileInfos(fileInfos);
+  console.log(`(${logKey}) Got ${fileInfos.length} FileInfo entities`);
+  if (fileInfos.length > 0) {
+    const paths = fileInfos.map(fileInfo => fileInfo.path);
+    await dataApi.deleteFiles(BACKUP_BUCKET, paths);
+    console.log(`(${logKey}) Deleted in the backup bucket`);
+
+    await dataApi.deleteFileInfos(fileInfos);
+    console.log(`(${logKey}) Deleted the FileInfo entities`);
+  }
 
   // FileLog
   const fileLogs = await dataApi.getObsoleteFileLogs();
-  await dataApi.deleteFileLogs(fileLogs);
+  console.log(`(${logKey}) Got ${fileLogs.length} obsolute FileLog entities`);
+  if (fileLogs.length > 0) {
+    await dataApi.deleteFileLogs(fileLogs);
+    console.log(`(${logKey}) Deleted the FileLog entities`);
+  }
 
   // BucketInfo: Do manually on GCloud Console for now.
 
   // FileWorkLog: Do manually on GCloud Console for now.
 
-  console.log(`(${logKey}) CleanUp finishes on ${(new Date()).toISOString()}.`);
+  console.log(`(${logKey}) cleanUp finishes on ${(new Date()).toISOString()}.`);
 };
 
 cleanUp();

@@ -11,13 +11,16 @@ const _main = async () => {
 
   let lastKeys = [], lastCreateDate = new Date('1970-01-01T00:00:00.000Z');
   const fileWorkLog = await dataApi.getLatestFileWorkLog();
+  console.log(`(${logKey}) Got ${fileWorkLog ? '1' : '0'} latest FileWorkLog entity`);
   if (isObject(fileWorkLog)) {
     lastKeys = fileWorkLog.lastKeys;
     lastCreateDate = fileWorkLog.lastCreateDate;
   }
+  console.log(`(${logKey}) Latest FileWorkLog lastCreateDate: ${lastCreateDate}`);
 
   const udtdFifsPerPath = {}, udtdBifsPerAddr = {};
   const fileLogs = await dataApi.getFileLogs(lastCreateDate);
+  console.log(`(${logKey}) Got ${fileLogs.length} FileLog entities`);
   for (const fileLog of fileLogs) {
     if (lastKeys.includes(fileLog.key)) continue;
 
@@ -32,7 +35,7 @@ const _main = async () => {
     } else if ([DELETE_FILE, MOVE_FILE_DEL_STEP].includes(fileLog.action)) {
       udtdFifsPerPath[fileLog.path].status = DELETED;
     } else {
-      console.log('Invalid fileLog.action:', fileLog);
+      console.log(`(${logKey}) Invalid fileLog.action: ${JSON.stringify(fileLog)}`);
       continue;
     }
     if (
@@ -60,7 +63,7 @@ const _main = async () => {
     } else if ([DELETE_FILE, MOVE_FILE_DEL_STEP].includes(fileLog.action)) {
       udtdBifsPerAddr[address].nItems -= 1;
     } else {
-      console.log('Invalid fileLog.action:', fileLog);
+      console.log(`(${logKey}) Invalid fileLog.action: ${JSON.stringify(fileLog)}`);
       continue;
     }
     udtdBifsPerAddr[address].size += fileLog.sizeChange;
@@ -77,9 +80,12 @@ const _main = async () => {
       udtdBifsPerAddr[address].updateDate = fileLog.createDate;
     }
   }
+  console.log(`(${logKey}) Populated udtdFifsPerPath and udtdBifsPerAddr`);
 
   const fileInfos = await dataApi.getFileInfos(Object.keys(udtdFifsPerPath));
+  console.log(`(${logKey}) Got ${fileInfos.length} FileInfo entities`);
   const bucketInfos = await dataApi.getBucketInfos(Object.keys(udtdBifsPerAddr));
+  console.log(`(${logKey}) Got ${bucketInfos.length} BucketInfo entities`);
 
   const fileInfosPerPath = {}, bucketInfosPerAddress = {};
   for (const fileInfo of fileInfos) {
@@ -135,9 +141,12 @@ const _main = async () => {
       udtdBucketInfos.push(udtdBucketInfo);
     }
   }
+  console.log(`(${logKey}) Populated udtdFileInfos and udtdBucketInfos`);
 
   await dataApi.updateFileInfos(udtdFileInfos);
+  console.log(`(${logKey}) Saved updated FileInfo entities`);
   await dataApi.updateBucketInfos(udtdBucketInfos);
+  console.log(`(${logKey}) Saved updated BucketInfo entities`);
 
   let latestKeys = [], latestCreateDate = startDate;
   for (let i = fileLogs.length - 1; i >= 0; i--) {
@@ -150,6 +159,9 @@ const _main = async () => {
     latestKeys.push(key);
   }
   await dataApi.saveFileWorkLog(latestKeys, latestCreateDate);
+  console.log(`(${logKey}) Saved latest FileWorkLog`);
+
+  console.log(`(${logKey}) Worker finishes on ${(new Date()).toISOString()}.`);
 };
 
 const main = async () => {

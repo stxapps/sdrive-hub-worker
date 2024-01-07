@@ -103,7 +103,7 @@ const getObsoleteFileLogs = async () => {
 const deleteFileLogs = async (fileLogs) => {
   const keys = [];
   for (const fileLog of fileLogs) {
-    keys.push(datastore.key([FILE_LOG, fileLog.key]));
+    keys.push(datastore.key([FILE_LOG, datastore.int(fileLog.key)]));
   }
 
   const nKeys = 64;

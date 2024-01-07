@@ -1,6 +1,6 @@
 import dataApi from './data'; // Mock test: import dataApi from './mock-data';
 import {
-  ACTIVE, DELETED, PUT_FILE, DELETE_FILE, MOVE_FILE_PUT_STEP, MOVE_FILE_DEL_STEP,
+  ACTIVE, DELETED, CREATE_FILE, UPDATE_FILE, DELETE_FILE,
 } from './const';
 import { isObject, randomString, extractPath } from './utils';
 
@@ -29,10 +29,10 @@ const _main = async () => {
         size: 0, createDate: null, updateDate: null,
       };
     }
-    if ([PUT_FILE, MOVE_FILE_PUT_STEP].includes(fileLog.action)) {
+    if ([CREATE_FILE, UPDATE_FILE].includes(fileLog.action)) {
       udtdFifsPerPath[fileLog.path].status = ACTIVE;
       udtdFifsPerPath[fileLog.path].size = fileLog.size;
-    } else if ([DELETE_FILE, MOVE_FILE_DEL_STEP].includes(fileLog.action)) {
+    } else if ([DELETE_FILE].includes(fileLog.action)) {
       udtdFifsPerPath[fileLog.path].status = DELETED;
     } else {
       console.log(`(${logKey}) Invalid fileLog.action: ${JSON.stringify(fileLog)}`);
@@ -58,9 +58,11 @@ const _main = async () => {
       };
     }
     udtdBifsPerAddr[address].assoIssAddress = fileLog.assoIssAddress;
-    if ([PUT_FILE, MOVE_FILE_PUT_STEP].includes(fileLog.action)) {
+    if ([CREATE_FILE].includes(fileLog.action)) {
       udtdBifsPerAddr[address].nItems += 1;
-    } else if ([DELETE_FILE, MOVE_FILE_DEL_STEP].includes(fileLog.action)) {
+    } else if ([UPDATE_FILE].includes(fileLog.action)) {
+      udtdBifsPerAddr[address].nItems += 0;
+    } else if ([DELETE_FILE].includes(fileLog.action)) {
       udtdBifsPerAddr[address].nItems -= 1;
     } else {
       console.log(`(${logKey}) Invalid fileLog.action: ${JSON.stringify(fileLog)}`);
@@ -153,7 +155,7 @@ const _main = async () => {
     const { key, createDate } = fileLogs[i];
 
     if (i === fileLogs.length - 1) latestCreateDate = createDate;
-    if (lastKeys.length >= 10 && latestCreateDate.getTime() > createDate.getTime()) {
+    if (latestKeys.length >= 10 && latestCreateDate.getTime() > createDate.getTime()) {
       break;
     }
     latestKeys.push(key);

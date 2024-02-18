@@ -31,7 +31,7 @@ const getFileLogs = async (createDate) => {
     const logs = [];
     for (const entity of entities) {
       const log = {
-        key: entity[datastore.KEY].id,
+        key: entity[datastore.KEY].name,
         path: entity.path,
         assoIssAddress: entity.assoIssAddress,
         action: entity.action,
@@ -62,7 +62,7 @@ const getLatestFileLogs = async () => {
 
     const logs = [];
     for (const entity of entities) {
-      const log = { key: entity[datastore.KEY].id, createDate: entity.createDate };
+      const log = { key: entity[datastore.KEY].name, createDate: entity.createDate };
       logs.push(log);
     }
     return logs;
@@ -90,7 +90,7 @@ const getObsoleteFileLogs = async () => {
 
     const logs = [];
     for (const entity of entities) {
-      const log = { key: entity[datastore.KEY].id };
+      const log = { key: entity[datastore.KEY].name };
       logs.push(log);
     }
     return logs;
@@ -103,7 +103,7 @@ const getObsoleteFileLogs = async () => {
 const deleteFileLogs = async (fileLogs) => {
   const keys = [];
   for (const fileLog of fileLogs) {
-    keys.push(datastore.key([FILE_LOG, datastore.int(fileLog.key)]));
+    keys.push(datastore.key([FILE_LOG, fileLog.key]));
   }
 
   const nKeys = 64;

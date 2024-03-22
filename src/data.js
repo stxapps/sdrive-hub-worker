@@ -8,8 +8,8 @@ const datastore = new Datastore();
 const storage = new Storage();
 
 // Tables: FileLog, FileInfo, BucketInfo, FileWorkLog, Blacklist, Revocation
-// FileLog: auto key, path, assoIssAddress, action, size, sizeChange, createDate
-//   source of truth in sdrive-hub/drivers/GcDriver.js
+// FileLog: path + cDT (key), path, assoIssAddress, action, size, sizeChange, createDate
+//   source of truth in sdrive-hub-tasker/data.js
 // FileInfo: path (key), status, size, createDate, updateDate
 // BucketInfo: address (key), assoIssAddress, nItems, size (Bytes), createDate,
 //   updateDate
@@ -451,7 +451,11 @@ const deleteFiles = async (bucketName, paths) => {
   const bucket = storage.bucket(bucketName);
   for (const path of paths) {
     const bucketFile = bucket.file(path);
-    await bucketFile.delete();
+    try {
+      await bucketFile.delete();
+    } catch (error) {
+      console.log(`In deleteFiles, ${path} has error:`, error);
+    }
   }
 };
 

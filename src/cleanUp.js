@@ -21,7 +21,7 @@ const cleanUp = async () => {
 
   // FileLog
   const fileLogs = await dataApi.getObsoleteFileLogs();
-  console.log(`(${logKey}) Got ${fileLogs.length} obsolute FileLog entities`);
+  console.log(`(${logKey}) Got ${fileLogs.length} obsolete FileLog entities`);
   if (fileLogs.length > 0) {
     await dataApi.deleteFileLogs(fileLogs);
     console.log(`(${logKey}) Deleted the FileLog entities`);

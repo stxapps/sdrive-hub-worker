@@ -65,20 +65,18 @@ const rework = async () => {
 
     const { address } = extractPath(hubFile.path);
     if (!isObject(udtdBifsPerAddr[address])) {
-      udtdBifsPerAddr[address] = {
-        nItems: 0, size: 0, createDate: null, updateDate: null,
-      };
+      udtdBifsPerAddr[address] = { nItems: 0, size: 0 };
     }
     udtdBifsPerAddr[address].nItems += 1;
     udtdBifsPerAddr[address].size += hubFile.size;
     if (
-      !udtdBifsPerAddr[address].createDate ||
+      !isObject(udtdBifsPerAddr[address].createDate) ||
       hubFile.createDate.getTime() < udtdBifsPerAddr[address].createDate.getTime()
     ) {
       udtdBifsPerAddr[address].createDate = hubFile.createDate;
     }
     if (
-      !udtdBifsPerAddr[address].updateDate ||
+      !isObject(udtdBifsPerAddr[address].updateDate) ||
       hubFile.updateDate.getTime() > udtdBifsPerAddr[address].updateDate.getTime()
     ) {
       udtdBifsPerAddr[address].updateDate = hubFile.updateDate;

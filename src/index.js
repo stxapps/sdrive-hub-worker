@@ -2,7 +2,7 @@ import dataApi from './data'; // Mock test: import dataApi from './mock-data';
 import {
   ACTIVE, DELETED, CREATE_FILE, UPDATE_FILE, DELETE_FILE,
 } from './const';
-import { isObject, randomString, extractPath } from './utils';
+import { isObject, isNumber, randomString, extractPath } from './utils';
 
 const _main = async () => {
   const startDate = new Date();
@@ -24,9 +24,7 @@ const _main = async () => {
     if (lastKeys.includes(fileLog.key)) continue;
 
     if (!isObject(udtdFifsPerPath[fileLog.path])) {
-      udtdFifsPerPath[fileLog.path] = {
-        size: 0, createDate: null, updateDate: null,
-      };
+      udtdFifsPerPath[fileLog.path] = {};
     }
     if ([CREATE_FILE, UPDATE_FILE].includes(fileLog.action)) {
       udtdFifsPerPath[fileLog.path].status = ACTIVE;
@@ -38,13 +36,13 @@ const _main = async () => {
       continue;
     }
     if (
-      !udtdFifsPerPath[fileLog.path].createDate ||
+      !isObject(udtdFifsPerPath[fileLog.path].createDate) ||
       fileLog.createDate.getTime() < udtdFifsPerPath[fileLog.path].createDate.getTime()
     ) {
       udtdFifsPerPath[fileLog.path].createDate = fileLog.createDate;
     }
     if (
-      !udtdFifsPerPath[fileLog.path].updateDate ||
+      !isObject(udtdFifsPerPath[fileLog.path].updateDate) ||
       fileLog.createDate.getTime() > udtdFifsPerPath[fileLog.path].updateDate.getTime()
     ) {
       udtdFifsPerPath[fileLog.path].updateDate = fileLog.createDate;
@@ -52,9 +50,7 @@ const _main = async () => {
 
     const { address } = extractPath(fileLog.path);
     if (!isObject(udtdBifsPerAddr[address])) {
-      udtdBifsPerAddr[address] = {
-        nItems: 0, size: 0, createDate: null, updateDate: null,
-      };
+      udtdBifsPerAddr[address] = { nItems: 0, size: 0 };
     }
     udtdBifsPerAddr[address].assoIssAddress = fileLog.assoIssAddress;
     if ([CREATE_FILE].includes(fileLog.action)) {
@@ -69,13 +65,13 @@ const _main = async () => {
     }
     udtdBifsPerAddr[address].size += fileLog.sizeChange;
     if (
-      !udtdBifsPerAddr[address].createDate ||
+      !isObject(udtdBifsPerAddr[address].createDate) ||
       fileLog.createDate.getTime() < udtdBifsPerAddr[address].createDate.getTime()
     ) {
       udtdBifsPerAddr[address].createDate = fileLog.createDate;
     }
     if (
-      !udtdBifsPerAddr[address].updateDate ||
+      !isObject(udtdBifsPerAddr[address].updateDate) ||
       fileLog.createDate.getTime() > udtdBifsPerAddr[address].updateDate.getTime()
     ) {
       udtdBifsPerAddr[address].updateDate = fileLog.createDate;
@@ -103,18 +99,18 @@ const _main = async () => {
     if (isObject(fileInfo)) {
       if (
         info.status !== fileInfo.status ||
-        info.size !== fileInfo.size ||
+        (isNumber(info.size) && info.size !== fileInfo.size) ||
         info.updateDate.getTime() !== fileInfo.updateDate.getTime()
       ) {
         [doUpdate, udtdFileInfo] = [true, { ...fileInfo }];
       }
     } else {
       const createDate = info.createDate;
-      [doUpdate, udtdFileInfo] = [true, { path, createDate }];
+      [doUpdate, udtdFileInfo] = [true, { path, size: 0, createDate }];
     }
     if (doUpdate) {
       udtdFileInfo.status = info.status;
-      udtdFileInfo.size = info.size;
+      if (isNumber(info.size)) udtdFileInfo.size = info.size;
       udtdFileInfo.updateDate = info.updateDate;
       udtdFileInfos.push(udtdFileInfo);
     }

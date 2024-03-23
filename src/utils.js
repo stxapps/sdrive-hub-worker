@@ -6,6 +6,10 @@ export const isString = (val) => {
   return typeof val === 'string' || val instanceof String;
 };
 
+export const isNumber = val => {
+  return typeof val === 'number' && isFinite(val);
+};
+
 export const randomString = (length) => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const charactersLength = characters.length;

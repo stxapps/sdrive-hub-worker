@@ -109,16 +109,20 @@ const rework = async () => {
     let doUpdate = false, udtdBucketInfo;
     const bucketInfo = bucketInfosPerAddress[address];
     if (isObject(bucketInfo)) {
-      if (info.nItems !== bucketInfo.nItems || info.size !== bucketInfo.size) {
+      if (
+        info.nItems !== bucketInfo.nItems ||
+        info.size !== bucketInfo.size ||
+        info.updateDate.getTime() !== bucketInfo.updateDate.getTime()
+      ) {
         [doUpdate, udtdBucketInfo] = [true, { ...bucketInfo }];
       }
     } else {
-      [doUpdate, udtdBucketInfo] = [true, { address, assoIssAddress: 'n/a' }];
+      const [assoIssAddress, createDate] = ['n/a', info.createDate];
+      [doUpdate, udtdBucketInfo] = [true, { address, assoIssAddress, createDate }];
     }
     if (doUpdate) {
       udtdBucketInfo.nItems = info.nItems;
       udtdBucketInfo.size = info.size;
-      udtdBucketInfo.createDate = info.createDate;
       udtdBucketInfo.updateDate = info.updateDate;
       udtdBucketInfos.push(udtdBucketInfo);
     }
@@ -129,6 +133,21 @@ const rework = async () => {
   console.log(`(${logKey}) Saved updated FileInfo entities`);
   await dataApi.updateBucketInfos(udtdBucketInfos);
   console.log(`(${logKey}) Saved updated BucketInfo entities`);
+
+  // Unused fileInfos and bucketInfos
+  const hbFilePaths = hubFiles.map(hubFile => hubFile.path);
+  for (const backupFile of backupFiles) {
+    if (hbFilePaths.includes(backupFile.path)) continue;
+    hbFilePaths.push(backupFile.path);
+  }
+  for (const fileInfo of fileInfos) {
+    if (hbFilePaths.includes(fileInfo.path)) continue;
+    console.log(`(${logKey}) Unused fileInfo path`, fileInfo.path);
+  }
+  for (const bucketInfo of bucketInfos) {
+    if (isObject(udtdBifsPerAddr[bucketInfo.address])) continue;
+    console.log(`(${logKey}) Unused bucketInfo address`, bucketInfo.address);
+  }
 
   // Alert newer FileLogs
   let latestKeys = [], latestCreateDate, newerFileLogs = [];

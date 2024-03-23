@@ -13,8 +13,7 @@ const _main = async () => {
   const fileWorkLog = await dataApi.getLatestFileWorkLog();
   console.log(`(${logKey}) Got ${fileWorkLog ? '1' : '0'} latest FileWorkLog entity`);
   if (isObject(fileWorkLog)) {
-    lastKeys = fileWorkLog.lastKeys;
-    lastCreateDate = fileWorkLog.lastCreateDate;
+    [lastKeys, lastCreateDate] = [fileWorkLog.lastKeys, fileWorkLog.lastCreateDate];
   }
   console.log(`(${logKey}) Latest FileWorkLog lastCreateDate: ${lastCreateDate}`);
 
@@ -121,27 +120,19 @@ const _main = async () => {
     }
   }
   for (const [address, info] of Object.entries(udtdBifsPerAddr)) {
-    let doUpdate = false, udtdBucketInfo;
+    let udtdBucketInfo;
     const bucketInfo = bucketInfosPerAddress[address];
     if (isObject(bucketInfo)) {
-      if (
-        info.nItems !== bucketInfo.nItems ||
-        info.size !== bucketInfo.size ||
-        info.updateDate.getTime() !== bucketInfo.updateDate.getTime()
-      ) {
-        [doUpdate, udtdBucketInfo] = [true, { ...bucketInfo }];
-      }
+      udtdBucketInfo = { ...bucketInfo };
     } else {
-      [doUpdate, udtdBucketInfo] = [true, { address }];
+      const [assoIssAddress, createDate] = [info.assoIssAddress, info.createDate];
+      udtdBucketInfo = { address, assoIssAddress, nItems: 0, size: 0, createDate };
     }
-    if (doUpdate) {
-      udtdBucketInfo.assoIssAddress = info.assoIssAddress;
-      udtdBucketInfo.nItems = info.nItems;
-      udtdBucketInfo.size = info.size;
-      udtdBucketInfo.createDate = info.createDate;
-      udtdBucketInfo.updateDate = info.updateDate;
-      udtdBucketInfos.push(udtdBucketInfo);
-    }
+
+    udtdBucketInfo.nItems += info.nItems;
+    udtdBucketInfo.size += info.size;
+    udtdBucketInfo.updateDate = info.updateDate;
+    udtdBucketInfos.push(udtdBucketInfo);
   }
   console.log(`(${logKey}) Populated udtdFileInfos and udtdBucketInfos`);
 

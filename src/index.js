@@ -2,7 +2,13 @@ import dataApi from './data'; // Mock test: import dataApi from './mock-data';
 import {
   ACTIVE, DELETED, CREATE_FILE, UPDATE_FILE, DELETE_FILE,
 } from './const';
-import { isObject, isNumber, randomString, extractPath } from './utils';
+import { isObject, isString, isNumber, randomString, extractPath } from './utils';
+
+export const deriveAssoIssAddress = (assoIssAddress, newAssoIssAddress) => {
+  if (!isString(assoIssAddress)) return newAssoIssAddress;
+  if (!isString(newAssoIssAddress) || newAssoIssAddress === 'n/a') return assoIssAddress;
+  return newAssoIssAddress;
+};
 
 const _main = async () => {
   const startDate = new Date();
@@ -52,7 +58,9 @@ const _main = async () => {
     if (!isObject(udtdBifsPerAddr[address])) {
       udtdBifsPerAddr[address] = { nItems: 0, size: 0 };
     }
-    udtdBifsPerAddr[address].assoIssAddress = fileLog.assoIssAddress;
+    udtdBifsPerAddr[address].assoIssAddress = deriveAssoIssAddress(
+      udtdBifsPerAddr[address].assoIssAddress, fileLog.assoIssAddress
+    );
     if ([CREATE_FILE].includes(fileLog.action)) {
       udtdBifsPerAddr[address].nItems += 1;
     } else if ([UPDATE_FILE].includes(fileLog.action)) {
@@ -121,10 +129,12 @@ const _main = async () => {
     if (isObject(bucketInfo)) {
       udtdBucketInfo = { ...bucketInfo };
     } else {
-      const [assoIssAddress, createDate] = [info.assoIssAddress, info.createDate];
-      udtdBucketInfo = { address, assoIssAddress, nItems: 0, size: 0, createDate };
+      const createDate = info.createDate;
+      udtdBucketInfo = { address, nItems: 0, size: 0, createDate };
     }
-
+    udtdBucketInfo.assoIssAddress = deriveAssoIssAddress(
+      udtdBucketInfo.assoIssAddress, info.assoIssAddress
+    );
     udtdBucketInfo.nItems += info.nItems;
     udtdBucketInfo.size += info.size;
     udtdBucketInfo.updateDate = info.updateDate;

@@ -115,6 +115,7 @@ const rework = async () => {
         [doUpdate, udtdBucketInfo] = [true, { ...bucketInfo }];
       }
     } else {
+      // rework gets info from Storage, so always no assoIssAddress.
       const [assoIssAddress, createDate] = ['n/a', info.createDate];
       [doUpdate, udtdBucketInfo] = [true, { address, assoIssAddress, createDate }];
     }

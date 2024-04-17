@@ -2,20 +2,27 @@ import dataApi from './data';
 import { BACKUP_BUCKET } from './const';
 import { randomString } from './utils';
 
+const doDryRun = process.argv[2] === '--dry-run';
+
 const cleanUp = async () => {
   const startDate = new Date();
   const logKey = randomString(12);
   console.log(`(${logKey}) cleanUp starts on ${startDate.toISOString()}`);
+  console.log(`(${logKey}) doDryRun: ${doDryRun}`);
 
   // Backup Storage and FileInfo
   const fileInfos = await dataApi.getDeletedFileInfos();
   console.log(`(${logKey}) Got ${fileInfos.length} FileInfo entities`);
   if (fileInfos.length > 0) {
+    for (const fileInfo of fileInfos) {
+      console.log(fileInfo);
+    }
+
     const paths = fileInfos.map(fileInfo => fileInfo.path);
-    await dataApi.deleteFiles(BACKUP_BUCKET, paths);
+    if (!doDryRun) await dataApi.deleteFiles(BACKUP_BUCKET, paths);
     console.log(`(${logKey}) Deleted in the backup bucket`);
 
-    await dataApi.deleteFileInfos(fileInfos);
+    if (!doDryRun) await dataApi.deleteFileInfos(fileInfos);
     console.log(`(${logKey}) Deleted the FileInfo entities`);
   }
 
@@ -23,7 +30,11 @@ const cleanUp = async () => {
   const fileLogs = await dataApi.getObsoleteFileLogs();
   console.log(`(${logKey}) Got ${fileLogs.length} obsolete FileLog entities`);
   if (fileLogs.length > 0) {
-    await dataApi.deleteFileLogs(fileLogs);
+    for (const fileLog of fileLogs) {
+      console.log(fileLog);
+    }
+
+    if (!doDryRun) await dataApi.deleteFileLogs(fileLogs);
     console.log(`(${logKey}) Deleted the FileLog entities`);
   }
 

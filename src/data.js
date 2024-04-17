@@ -210,6 +210,10 @@ const getDeletedFileInfos = async () => {
     for (const entity of entities) {
       const info = {
         path: entity[datastore.KEY].name,
+        status: entity.status,
+        size: entity.size,
+        createDate: entity.createDate,
+        updateDate: entity.updateDate,
       };
       infos.push(info);
     }

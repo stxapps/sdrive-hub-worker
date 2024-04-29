@@ -452,14 +452,17 @@ const copyFile = async (bucketName, path, destBucketName) => {
 };
 
 const deleteFiles = async (bucketName, paths) => {
-  const bucket = storage.bucket(bucketName);
-  for (const path of paths) {
-    const bucketFile = bucket.file(path);
-    try {
-      await bucketFile.delete();
-    } catch (error) {
-      console.log(`In deleteFiles, ${path} has error:`, error);
-    }
+  const bucket = storage.bucket(bucketName), nItems = 32;
+  for (let i = 0; i < paths.length; i += nItems) {
+    const selectedPaths = paths.slice(i, i + nItems);
+    await Promise.all(
+      selectedPaths.map(path => {
+        const bucketFile = bucket.file(path);
+        return bucketFile.delete().catch(error => {
+          console.log(`In deleteFiles, ${path} has error:`, error);
+        });
+      })
+    );
   }
 };
 

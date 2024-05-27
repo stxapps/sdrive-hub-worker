@@ -1,7 +1,7 @@
-import { Datastore, PropertyFilter, and } from '@google-cloud/datastore';
+import { Datastore, PropertyFilter } from '@google-cloud/datastore';
 import { Storage } from '@google-cloud/storage';
 
-import { FILE_LOG, FILE_INFO, BUCKET_INFO, FILE_WORK_LOG, DELETED } from './const';
+import { FILE_LOG, FILE_INFO, BUCKET_INFO, FILE_WORK_LOG } from './const';
 import { isString } from './utils';
 
 const datastore = new Datastore();
@@ -72,57 +72,6 @@ const getLatestFileLogs = async () => {
   }
 };
 
-const getObsoleteFileLogs = async () => {
-  const dt = Date.now() - (31 * 24 * 60 * 60 * 1000);
-  const date = new Date(dt);
-
-  const transaction = datastore.transaction({ readOnly: true });
-  try {
-    await transaction.run();
-
-    const query = datastore.createQuery(FILE_LOG);
-    query.filter(new PropertyFilter('createDate', '<', date));
-    query.order('createDate', { descending: false });
-    query.limit(800);
-    const [entities] = await transaction.runQuery(query);
-
-    await transaction.commit();
-
-    const logs = [];
-    for (const entity of entities) {
-      const log = { key: entity[datastore.KEY].name };
-      logs.push(log);
-    }
-    return logs;
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
-  }
-};
-
-const deleteFileLogs = async (fileLogs) => {
-  const keys = [];
-  for (const fileLog of fileLogs) {
-    keys.push(datastore.key([FILE_LOG, fileLog.key]));
-  }
-
-  const nKeys = 64;
-  for (let i = 0; i < keys.length; i += nKeys) {
-    const selectedKeys = keys.slice(i, i + nKeys);
-
-    const transaction = datastore.transaction();
-    try {
-      await transaction.run();
-
-      transaction.delete(selectedKeys);
-      await transaction.commit();
-    } catch (e) {
-      await transaction.rollback();
-      throw e;
-    }
-  }
-};
-
 const getFileInfos = async (paths) => {
   const keys = [];
   for (const path of paths) {
@@ -187,43 +136,6 @@ const getAllFileInfos = async () => {
   }
 };
 
-const getDeletedFileInfos = async () => {
-  const dt = Date.now() - (31 * 24 * 60 * 60 * 1000);
-  const date = new Date(dt);
-
-  const transaction = datastore.transaction({ readOnly: true });
-  try {
-    await transaction.run();
-
-    const query = datastore.createQuery(FILE_INFO);
-    query.filter(and([
-      new PropertyFilter('status', '=', DELETED),
-      new PropertyFilter('updateDate', '<', date),
-    ])); // Need Composite Index Configuration in index.yaml in sdrive-hub
-    query.order('updateDate', { descending: false });
-    query.limit(800);
-    const [entities] = await transaction.runQuery(query);
-
-    await transaction.commit();
-
-    const infos = [];
-    for (const entity of entities) {
-      const info = {
-        path: entity[datastore.KEY].name,
-        status: entity.status,
-        size: entity.size,
-        createDate: entity.createDate,
-        updateDate: entity.updateDate,
-      };
-      infos.push(info);
-    }
-    return infos;
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
-  }
-};
-
 const updateFileInfos = async (fileInfos) => {
   const entities = [];
   for (const fileInfo of fileInfos) {
@@ -248,29 +160,6 @@ const updateFileInfos = async (fileInfos) => {
       await transaction.run();
 
       transaction.save(selectedEntities);
-      await transaction.commit();
-    } catch (e) {
-      await transaction.rollback();
-      throw e;
-    }
-  }
-};
-
-const deleteFileInfos = async (fileInfos) => {
-  const keys = [];
-  for (const fileInfo of fileInfos) {
-    keys.push(datastore.key([FILE_INFO, fileInfo.path]));
-  }
-
-  const nKeys = 64;
-  for (let i = 0; i < keys.length; i += nKeys) {
-    const selectedKeys = keys.slice(i, i + nKeys);
-
-    const transaction = datastore.transaction();
-    try {
-      await transaction.run();
-
-      transaction.delete(selectedKeys);
       await transaction.commit();
     } catch (e) {
       await transaction.rollback();
@@ -451,26 +340,10 @@ const copyFile = async (bucketName, path, destBucketName) => {
   await bucketFile.copy(destBucket, { predefinedAcl: 'private' });
 };
 
-const deleteFiles = async (bucketName, paths) => {
-  const bucket = storage.bucket(bucketName), nItems = 32;
-  for (let i = 0; i < paths.length; i += nItems) {
-    const selectedPaths = paths.slice(i, i + nItems);
-    await Promise.all(
-      selectedPaths.map(path => {
-        const bucketFile = bucket.file(path);
-        return bucketFile.delete().catch(error => {
-          console.log(`In deleteFiles, ${path} has error:`, error);
-        });
-      })
-    );
-  }
-};
-
 const data = {
-  getFileLogs, getLatestFileLogs, getObsoleteFileLogs, deleteFileLogs, getFileInfos,
-  getAllFileInfos, getDeletedFileInfos, updateFileInfos, deleteFileInfos,
+  getFileLogs, getLatestFileLogs, getFileInfos, getAllFileInfos, updateFileInfos,
   getBucketInfos, getAllBucketInfos, updateBucketInfos, getLatestFileWorkLog,
-  saveFileWorkLog, listFiles, copyFile, deleteFiles,
+  saveFileWorkLog, listFiles, copyFile,
 };
 
 export default data;

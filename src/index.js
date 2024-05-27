@@ -1,7 +1,5 @@
 import dataApi from './data'; // Mock test: import dataApi from './mock-data';
-import {
-  ACTIVE, DELETED, CREATE_FILE, UPDATE_FILE, DELETE_FILE,
-} from './const';
+import { ACTIVE, DELETED, CREATE_FILE, UPDATE_FILE, DELETE_FILE } from './const';
 import { isObject, isString, isNumber, randomString, extractPath } from './utils';
 
 export const deriveAssoIssAddress = (assoIssAddress, newAssoIssAddress) => {

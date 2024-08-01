@@ -92,6 +92,7 @@ const getFileInfos = async (paths) => {
       for (const entity of entities) {
         const info = {
           path: entity[datastore.KEY].name,
+          address: entity.address,
           status: entity.status,
           size: entity.size,
           createDate: entity.createDate,
@@ -122,6 +123,7 @@ const getAllFileInfos = async () => {
     for (const entity of entities) {
       const info = {
         path: entity[datastore.KEY].name,
+        address: entity.address,
         status: entity.status,
         size: entity.size,
         createDate: entity.createDate,
@@ -148,6 +150,9 @@ const updateFileInfos = async (fileInfos) => {
         { name: 'updateDate', value: fileInfo.updateDate },
       ],
     };
+    if (isString(fileInfo.address)) {
+      entity.data = [{ name: 'address', value: fileInfo.address }, ...entity.data];
+    }
     entities.push(entity);
   }
 
@@ -311,10 +316,12 @@ const saveFileWorkLog = async (lastKeys, lastCreateDate) => {
   await datastore.save({ key: datastore.key([FILE_WORK_LOG]), data: logData });
 };
 
-const listFiles = async (bucketName) => {
+const listFiles = async (bucketName, prefix = null) => {
   const files = [];
   await new Promise((resolve, reject) => {
-    const readable = storage.bucket(bucketName).getFilesStream({ autoPaginate: false });
+    const options = { autoPaginate: false };
+    if (isString(prefix)) options.prefix = prefix;
+    const readable = storage.bucket(bucketName).getFilesStream(options);
     readable.on('error', (error) => {
       reject(error);
     });

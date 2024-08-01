@@ -46,6 +46,8 @@ const rework = async () => {
       console.log(`(${logKey}) Copied ${hubFile.path} to the backup bucket`);
     }
 
+    const { address } = extractPath(hubFile.path);
+
     let doUpdate = false, udtdFileInfo;
     const fileInfo = fileInfosPerPath[hubFile.path];
     if (isObject(fileInfo)) {
@@ -54,7 +56,7 @@ const rework = async () => {
       }
     } else {
       const [path, createDate] = [hubFile.path, hubFile.createDate];
-      [doUpdate, udtdFileInfo] = [true, { path, createDate }];
+      [doUpdate, udtdFileInfo] = [true, { path, address, createDate }];
     }
     if (doUpdate) {
       udtdFileInfo.status = ACTIVE;
@@ -63,7 +65,6 @@ const rework = async () => {
       udtdFileInfos.push(udtdFileInfo);
     }
 
-    const { address } = extractPath(hubFile.path);
     if (!isObject(udtdBifsPerAddr[address])) {
       udtdBifsPerAddr[address] = { nItems: 0, size: 0 };
     }
@@ -86,6 +87,8 @@ const rework = async () => {
     const hubFile = hubFilesPerPath[backupFile.path];
     if (isObject(hubFile)) continue;
 
+    const { address } = extractPath(backupFile.path);
+
     let doUpdate = false, udtdFileInfo;
     const fileInfo = fileInfosPerPath[backupFile.path];
     if (isObject(fileInfo)) {
@@ -94,7 +97,7 @@ const rework = async () => {
       }
     } else {
       const [path, createDate] = [backupFile.path, backupFile.createDate];
-      [doUpdate, udtdFileInfo] = [true, { path, createDate }];
+      [doUpdate, udtdFileInfo] = [true, { path, address, createDate }];
     }
     if (doUpdate) {
       udtdFileInfo.status = DELETED;

@@ -27,8 +27,10 @@ const _main = async () => {
   for (const fileLog of fileLogs) {
     if (lastKeys.includes(fileLog.key)) continue;
 
+    const { address } = extractPath(fileLog.path);
+
     if (!isObject(udtdFifsPerPath[fileLog.path])) {
-      udtdFifsPerPath[fileLog.path] = {};
+      udtdFifsPerPath[fileLog.path] = { address };
     }
     if ([CREATE_FILE, UPDATE_FILE].includes(fileLog.action)) {
       udtdFifsPerPath[fileLog.path].status = ACTIVE;
@@ -52,7 +54,6 @@ const _main = async () => {
       udtdFifsPerPath[fileLog.path].updateDate = fileLog.createDate;
     }
 
-    const { address } = extractPath(fileLog.path);
     if (!isObject(udtdBifsPerAddr[address])) {
       udtdBifsPerAddr[address] = { nItems: 0, size: 0 };
     }
@@ -111,8 +112,8 @@ const _main = async () => {
         [doUpdate, udtdFileInfo] = [true, { ...fileInfo }];
       }
     } else {
-      const createDate = info.createDate;
-      [doUpdate, udtdFileInfo] = [true, { path, size: 0, createDate }];
+      const [address, createDate] = [info.address, info.createDate];
+      [doUpdate, udtdFileInfo] = [true, { path, address, size: 0, createDate }];
     }
     if (doUpdate) {
       udtdFileInfo.status = info.status;

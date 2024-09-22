@@ -13,6 +13,12 @@ const _main = async () => {
   const logKey = `${startDate.getTime()}-${randomString(4)}`;
   console.log(`(${logKey}) Worker starts on ${startDate.toISOString()}`);
 
+  // No need as no network connections
+  /*process.on('SIGTERM', () => {
+    console.log(`(${logKey}) received SIGTERM`);
+    process.exit(0);
+  });*/
+
   let lastKeys = [], lastCreateDate = new Date('1970-01-01T00:00:00.000Z');
   const fileWorkLog = await dataApi.getLatestFileWorkLog();
   console.log(`(${logKey}) Got ${fileWorkLog ? '1' : '0'} latest FileWorkLog entity`);

@@ -4,14 +4,14 @@ import { BACKUP_BUCKET, HUB_BUCKET } from './const';
 // Manually backup files and save fileLogs if errors in sdrive-hub-tasker.
 //
 // 1. Query logs in Logs explorer to check if there was errors
-// resource.type="cloud_run_revision" SEARCH("`) Error`") timestamp >= "2024-06-01T00:00:00Z" timestamp <= "2024-07-31T23:59:59Z"
+// resource.type="cloud_run_revision" SEARCH("`) Error`") timestamp >= "2024-10-22T00:00:00Z" timestamp <= "2024-11-25T23:59:59Z"
 //
 // 2. Check in Storage browser if exist in bucket sdrive-hub and backup
 // Filter objects: path
 //
 // 3. If in sdrive-hub but not in backup, manually copy.
 const copyFile = async () => {
-  const path = '19pFThzqfdSBHroS5UdKW611fs96PCBcm1/tags/1721474642928-PNJq/i0000n_/1722244080492/1722244080492/1722082081265-ihQW-sdkf-1722082134188.json';
+  const path = '';
   await dataApi.copyFile(HUB_BUCKET, path, BACKUP_BUCKET);
 };
 copyFile();
@@ -40,7 +40,7 @@ const saveFileLog = async () => {
 //
 // Tips: use Storage browser and filter with address for a glimpse.
 const listFiles = async () => {
-  const address = '18uDzPVE8wfEqgZ6KqZY4b6ZeP1GhkeNxG';
+  const address = '';
   const hubFiles = await dataApi.listFiles(HUB_BUCKET, address);
   for (const hubFile of hubFiles) {
     console.log(hubFile);

@@ -147,6 +147,9 @@ const _main = async () => {
   }
   console.log(`(${logKey}) Populated udtdFileInfos and udtdBucketInfos`);
 
+  // updateFileInfos, updateBucketInfos, and saveFileWorkLog in one transaction
+  //   for consistency and can retry, but might bad performance!
+
   await dataApi.updateFileInfos(udtdFileInfos);
   console.log(`(${logKey}) Saved updated FileInfo entities`);
   await dataApi.updateBucketInfos(udtdBucketInfos);
